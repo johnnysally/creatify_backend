@@ -1,40 +1,50 @@
 /**
- * Database Configuration
+ * Database Configuration for Sequelize (Render-ready)
  *
- * Configure your local database connection here.
- * Replace the placeholder values with your actual database credentials.
+ * This setup supports both local (development) and Render (production)
+ * PostgreSQL databases using environment variables.
  */
+
+require('dotenv').config();
 
 module.exports = {
   development: {
-    host: process.env.DB_HOST || 'dpg-d3tii4ili9vc73bdmia0-a',
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || 'creativehub_db',
     username: process.env.DB_USER || 'admins',
     password: process.env.DB_PASSWORD || 'TS1PDLpaSYDnYFW6XlskssSPho4AV6J7',
-    dialect: 'postgres', // or 'postgres', 'sqlite', 'mariadb', 'mssql'
+    database: process.env.DB_NAME || 'creativehub_db',
+    host: process.env.DB_HOST || 'dpg-d3tii4ili9vc73bdmia0-a',
+    port: process.env.DB_PORT || 5432,
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
     pool: {
       max: 5,
       min: 0,
       acquire: 30000,
-      idle: 10000
+      idle: 10000,
     },
-    logging: console.log // Set to false in production
+    logging: console.log,
   },
-  
+
   production: {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    database: process.env.DB_NAME,
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+    use_env_variable: 'DATABASE_URL',
     dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
     pool: {
       max: 10,
       min: 2,
       acquire: 30000,
-      idle: 10000
+      idle: 10000,
     },
-    logging: false
-  }
+    logging: false,
+  },
 };
