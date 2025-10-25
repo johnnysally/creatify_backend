@@ -71,6 +71,7 @@ app.get('/api/health', (req, res) =>
 
 // --- Database Setup (PostgreSQL via Sequelize) ---
 const { Sequelize } = require('sequelize');
+const dbConfigModule = require('./config/database.config');
 
 const DB_URL = process.env.DATABASE_URL;
 
@@ -90,7 +91,9 @@ if (DB_URL) {
 } else {
   console.log('Using DB host/port from env:', process.env.DB_HOST || 'no DB_HOST', process.env.DB_PORT || 'no DB_PORT');
 }
-const DB_CONFIG = {
+
+// Base DB config (ssl + logging)
+const baseDbConfig = {
   dialect: 'postgres',
   dialectOptions: {
     ssl: {
@@ -101,18 +104,36 @@ const DB_CONFIG = {
   logging: false,
 };
 
-const sequelize = DB_URL
-  ? new Sequelize(DB_URL, DB_CONFIG)
-  : new Sequelize(
-      process.env.DB_NAME || 'creativehub_db',
-      process.env.DB_USER || 'admins',
-      process.env.DB_PASSWORD || 'password',
-      {
-        host: process.env.DB_HOST || 'localhost',
-        port: process.env.DB_PORT || 5432,
-        ...DB_CONFIG,
-      }
-    );
+let sequelize;
+if (DB_URL) {
+  // Use production config pool/retry if available
+  const prodCfg = dbConfigModule.production || {};
+  const pool = prodCfg.pool || { max: 10, min: 2, acquire: 30000, idle: 10000 };
+  const retry = prodCfg.retry || { max: 3 };
+
+  const dbConfig = {
+    ...baseDbConfig,
+    pool,
+    retry,
+  };
+
+  sequelize = new Sequelize(DB_URL, dbConfig);
+} else {
+  const devCfg = dbConfigModule.development || {};
+  const pool = devCfg.pool || { max: 5, min: 0, acquire: 30000, idle: 10000 };
+
+  sequelize = new Sequelize(
+    process.env.DB_NAME || 'creativehub_db',
+    process.env.DB_USER || 'admins',
+    process.env.DB_PASSWORD || 'password',
+    {
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 5432,
+      ...baseDbConfig,
+      pool,
+    }
+  );
+}
 
 // --- Database Initialization ---
 (async () => {
