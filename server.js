@@ -37,20 +37,27 @@ app.use(
 );
 
 // --- CORS Setup ---
-const rawOrigins =
-  process.env.FRONTEND_ORIGIN ||
-  process.env.VITE_API_URL ||
-  'http://localhost:5173';
-const allowedOrigins = rawOrigins.split(',').map((s) => s.trim()).filter(Boolean);
+const allowedOrigins = [
+  process.env.FRONTEND_ORIGIN,
+  process.env.FRONTEND_ORIGIN_ADMIN,
+  'http://localhost:5173',
+].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes('*') || allowedOrigins.includes(origin))
+
+      if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
         return callback(null, true);
-      return callback(new Error('CORS policy: This origin is not allowed'), false);
+      } else {
+        console.log('❌ CORS blocked origin:', origin);
+        return callback(new Error('CORS policy: This origin is not allowed'));
+      }
     },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
