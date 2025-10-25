@@ -31,12 +31,17 @@ const register = async (req, res) => {
 
     // If requesting special role, create approval request
     if (role && role !== 'public') {
-      const approval = await db.Approval.create({
-        userId: user.id,
-        requestedRole: role,
-        status: role === 'ceo' ? 'approved' : 'pending',
-      });
-      console.log(`Approval record created for user=${user.email} role=${role} status=${approval.status}`);
+      try {
+        const approval = await db.Approval.create({
+          userId: user.id,
+          requestedRole: role,
+          status: role === 'ceo' ? 'approved' : 'pending',
+        });
+        console.log(`Approval record created for user=${user.email} role=${role} status=${approval.status}`);
+      } catch (approvalErr) {
+        // Approval creation may fail due to DB constraints (enum mismatch, FK issues); log and continue
+        console.error('Approval creation failed (non-fatal):', approvalErr && approvalErr.stack ? approvalErr.stack : approvalErr);
+      }
     }
 
     const token = jwtUtils.signToken({ userId: user.id, email: user.email, role: user.role }, '7d');
@@ -53,8 +58,10 @@ const register = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    // Log full stack for debugging
+    console.error('Registration error:', error && error.stack ? error.stack : error);
+    // Include a hint in the response to check server logs (do not leak internals)
+    res.status(500).json({ error: 'Registration failed. Check server logs for details.' });
   }
 };
 
