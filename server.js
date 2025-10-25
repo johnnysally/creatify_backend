@@ -73,6 +73,23 @@ app.get('/api/health', (req, res) =>
 const { Sequelize } = require('sequelize');
 
 const DB_URL = process.env.DATABASE_URL;
+
+// Helper to mask credentials in a DATABASE_URL for safe logging
+function maskDbUrl(u) {
+  if (!u) return null;
+  try {
+    return u.replace(/(\/\/[^:]+:)([^@]+)@/, '$1*****@');
+  } catch (e) {
+    return '[masked]';
+  }
+}
+
+// Log which DB connection string we're using (masked) to help debug connection errors
+if (DB_URL) {
+  console.log('Using DATABASE_URL:', maskDbUrl(DB_URL));
+} else {
+  console.log('Using DB host/port from env:', process.env.DB_HOST || 'no DB_HOST', process.env.DB_PORT || 'no DB_PORT');
+}
 const DB_CONFIG = {
   dialect: 'postgres',
   dialectOptions: {
