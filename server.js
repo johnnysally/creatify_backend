@@ -139,6 +139,17 @@ const sequelize = DB_URL
     app.use('/api/admin', require('./routes/admin.routes'));
     app.use('/api/orders', require('./routes/order.routes'));
 
+    // Optional debug endpoint to test DB connectivity from the running instance.
+    // Enable by setting ENABLE_DB_DEBUG=true in your environment (Render dashboard or .env.local).
+    if (process.env.ENABLE_DB_DEBUG === 'true') {
+      try {
+        app.use('/api/_debug', require('./routes/debug.routes'));
+        console.log('DB debug endpoint enabled at /api/_debug/db');
+      } catch (e) {
+        console.warn('Could not mount debug route:', e && e.message ? e.message : e);
+      }
+    }
+
     // --- Serve Frontend ---
     const frontendDist = path.join(__dirname, '..', 'dist');
     if (fs.existsSync(frontendDist)) {
