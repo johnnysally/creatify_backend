@@ -12,7 +12,7 @@ module.exports = {
     username: process.env.DB_USER || 'admins',
     password: process.env.DB_PASSWORD || 'TS1PDLpaSYDnYFW6XlskssSPho4AV6J7',
     database: process.env.DB_NAME || 'creativehub_db',
-    host: process.env.DB_HOST || 'dpg-d3tii4ili9vc73bdmia0-a',
+    host: process.env.DB_HOST || 'dpg-d3tii4ili9vc73bdmia0-a.render.com',
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
     dialectOptions: {
@@ -21,12 +21,12 @@ module.exports = {
         rejectUnauthorized: false,
       },
     },
-    pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000,
-    },
+      pool: {
+        max: 3,
+        min: 0,
+        acquire: 30000,
+        idle: 10000,
+      },
     logging: console.log,
   },
 
@@ -39,12 +39,12 @@ module.exports = {
         rejectUnauthorized: false,
       },
     },
-    pool: {
-      max: 10,
-      min: 2,
-      acquire: 30000,
-      idle: 10000,
-    },
+      pool: {
+        max: 3,
+        min: 1,
+        acquire: 30000,
+        idle: 10000,
+      },
     logging: false,
   },
 };
