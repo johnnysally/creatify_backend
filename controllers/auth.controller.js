@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwtUtils = require('../utils/jwt');
-const db = require('../models');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 const register = async (req, res) => {
   try {
@@ -12,7 +13,7 @@ const register = async (req, res) => {
     }
 
     // Check if user exists
-    const existingUser = await db.User.findOne({ where: { email } });
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: 'Email already registered' });
     }
@@ -21,21 +22,25 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const user = await db.User.create({
-      email,
-      password: hashedPassword,
-      fullName,
-      role: role || 'public',
-      isApproved: role === 'public' || role === 'ceo', // Public and CEO auto-approved
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        fullName,
+        role: role || 'public',
+        isApproved: role === 'public' || role === 'ceo',
+      },
     });
 
     // If requesting special role, create approval request
     if (role && role !== 'public') {
       try {
-        const approval = await db.Approval.create({
-          userId: user.id,
-          requestedRole: role,
-          status: role === 'ceo' ? 'approved' : 'pending',
+        const approval = await prisma.approval.create({
+          data: {
+            userId: user.id,
+            requestedRole: role,
+            status: role === 'ceo' ? 'approved' : 'pending',
+          },
         });
         console.log(`Approval record created for user=${user.email} role=${role} status=${approval.status}`);
       } catch (approvalErr) {
@@ -73,7 +78,7 @@ const login = async (req, res) => {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    const user = await db.User.findOne({ where: { email } });
+  const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -83,7 +88,7 @@ const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    if (!user.isActive) {
+    if (user.isActive === false) {
       return res.status(403).json({ error: 'Account is deactivated' });
     }
 
@@ -108,10 +113,19 @@ const login = async (req, res) => {
 
 const getCurrentUser = async (req, res) => {
   try {
-    const user = await db.User.findByPk(req.user.id, {
-      attributes: { exclude: ['password'] },
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isApproved: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
-
     res.json({ user });
   } catch (error) {
     console.error('Get current user error:', error);
